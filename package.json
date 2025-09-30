@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-xxapi",
   "description": "get xxapi info",
-  "version": "0.0.88",
+  "version": "0.1.1",
   "author": "BakaAkari",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
