@@ -3,10 +3,12 @@ import { logInfo, logError } from '../index'
 
 export interface FigurineConfig {
   apiKey: string
+  cooldownTime: number
 }
 
 export const FigurineConfig: Schema<FigurineConfig> = Schema.object({
-  apiKey: Schema.string().required().description('API密钥')
+  apiKey: Schema.string().required().description('API密钥'),
+  cooldownTime: Schema.number().default(5000).min(1000).max(60000).description('等待发送图片的时间(毫秒)')
 })
 
 interface FigurineResponse {
@@ -20,6 +22,7 @@ export class FigurineModule {
   private ctx: Context
   private config: FigurineConfig
   private waitingImages: Map<string, { style: number, timeout: NodeJS.Timeout }> = new Map()
+  private processingUsers: Set<string> = new Set()
 
   constructor(ctx: Context, config: FigurineConfig) {
     this.ctx = ctx
@@ -35,6 +38,13 @@ export class FigurineModule {
       this.ctx.command(`手办化${style}`, `使用风格${style}进行手办化`)
         .action(async (argv) => {
           try {
+            const userId = argv.session.userId
+            
+            // 检查用户是否正在处理中
+            if (this.processingUsers.has(userId)) {
+              return '手办化正在处理中，请等待当前任务完成后再试'
+            }
+            
             logInfo(`手办化模块: 用户请求手办化风格${style}`)
             
             // 检查消息中是否有图片
@@ -69,6 +79,8 @@ export class FigurineModule {
           } catch (error) {
             logError('手办化模块: 处理等待的图片失败', error)
             await session.send('手办化处理失败，请稍后重试')
+            // 处理失败时也要清除处理状态
+            this.processingUsers.delete(session.userId)
           }
         }
       }
@@ -180,6 +192,9 @@ export class FigurineModule {
   private async waitForImage(session: any, style: number): Promise<string> {
     const userId = session.userId
     
+    // 标记用户为处理中状态
+    this.processingUsers.add(userId)
+    
     // 清除之前的等待状态
     if (this.waitingImages.has(userId)) {
       const { timeout } = this.waitingImages.get(userId)!
@@ -189,6 +204,7 @@ export class FigurineModule {
     // 设置10秒超时
     const timeout = setTimeout(() => {
       this.waitingImages.delete(userId)
+      this.processingUsers.delete(userId)
       session.send('等待超时，请重新发送指令')
     }, 10000)
     
@@ -198,7 +214,12 @@ export class FigurineModule {
   }
 
   private async processImage(session: any, imageUrl: string, style: number): Promise<void> {
+    const userId = session.userId
+    
     try {
+      // 标记用户为处理中状态
+      this.processingUsers.add(userId)
+      
       logInfo(`手办化模块: 开始处理图片，风格${style}`, { imageUrl: imageUrl.substring(0, 100) + '...' })
       
       // 发送处理中消息
@@ -245,9 +266,17 @@ export class FigurineModule {
         resultUrl: response.data.substring(0, 50) + '...'
       })
       
+      // 等待配置的时间后清除处理状态
+      setTimeout(() => {
+        this.processingUsers.delete(userId)
+        logInfo('手办化模块: 用户处理状态已清除', { userId })
+      }, this.config.cooldownTime)
+      
     } catch (error) {
       logError('手办化模块: 处理图片失败', error)
       await session.send('手办化处理失败，请检查图片链接是否有效或稍后重试')
+      // 处理失败时立即清除处理状态
+      this.processingUsers.delete(userId)
     }
   }
 
@@ -261,5 +290,7 @@ export class FigurineModule {
       clearTimeout(timeout)
     }
     this.waitingImages.clear()
+    // 清理处理状态
+    this.processingUsers.clear()
   }
 }
