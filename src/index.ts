@@ -2,7 +2,6 @@ import { Context, Schema } from 'koishi'
 import { NewsModule, NewsConfig } from './modules/news'
 import { WeiboModule, WeiboConfig } from './modules/weibo'
 import { GoldModule, GoldConfig } from './modules/gold'
-import { FigurineModule, FigurineConfig } from './modules/figurine'
 
 export const name = 'xxapi'
 
@@ -10,7 +9,6 @@ export interface Config {
   news: NewsConfig
   weibo: WeiboConfig
   gold: GoldConfig
-  figurine: FigurineConfig
   enableLog: boolean
 }
 
@@ -18,14 +16,12 @@ export const Config: Schema<Config> = Schema.object({
   news: NewsConfig,
   weibo: WeiboConfig,
   gold: GoldConfig,
-  figurine: FigurineConfig,
   enableLog: Schema.boolean().default(true).description('启用全局日志记录')
 })
 
 let newsModule: NewsModule
 let weiboModule: WeiboModule
 let goldModule: GoldModule
-let figurineModule: FigurineModule
 let globalConfig: Config
 let logger: any
 
@@ -41,9 +37,6 @@ export function apply(ctx: Context, config: Config) {
   
   // 初始化金价模块
   goldModule = new GoldModule(ctx, config.gold)
-  
-  // 初始化手办化模块
-  figurineModule = new FigurineModule(ctx, config.figurine)
   
   // 添加清空缓存命令
   ctx.command('清空缓存', '清空今日新闻缓存')
@@ -83,18 +76,12 @@ export function apply(ctx: Context, config: Config) {
     if (newsModule && config.news) {
       newsModule.updateConfig(config.news)
     }
-    if (figurineModule && config.figurine) {
-      figurineModule.updateConfig(config.figurine)
-    }
   })
   
   // 插件卸载时清理资源
   ctx.on('dispose', () => {
     if (newsModule) {
       newsModule.destroy()
-    }
-    if (figurineModule) {
-      figurineModule.destroy()
     }
   })
 }
