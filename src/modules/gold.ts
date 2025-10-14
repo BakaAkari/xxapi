@@ -90,7 +90,7 @@ export class GoldModule {
           
         } catch (error) {
           logError('金价模块错误', error)
-          return '获取金价失败，请稍后重试: ' + error.message
+          return '获取金价失败，请稍后重试'
         }
       })
   }

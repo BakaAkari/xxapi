@@ -62,7 +62,7 @@ export class WeiboModule {
           
         } catch (error) {
           logError('微博热搜模块错误', error)
-          return '获取微博热搜失败，请稍后重试: ' + error.message
+          return '获取微博热搜失败，请稍后重试'
         }
       })
   }

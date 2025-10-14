@@ -286,7 +286,7 @@ export class NewsModule {
       return `测试推送成功!\n图片路径: ${imagePath}\n配置状态: ${this.getPushStatus()}`
     } catch (error) {
       logError('测试推送失败', error)
-      return `测试推送失败: ${error.message}`
+      return '测试推送失败，请查看日志获取详细信息'
     }
   }
 
@@ -305,7 +305,7 @@ export class NewsModule {
       return `定时器已重置\n${this.getPushStatus()}`
     } catch (error) {
       logError('重置定时器失败', error)
-      return `重置定时器失败: ${error.message}`
+      return '重置定时器失败，请查看日志获取详细信息'
     }
   }
 
@@ -334,7 +334,7 @@ export class NewsModule {
       return '测试定时器已设置，5秒后触发自动推送功能'
     } catch (error) {
       logError('设置测试定时器失败', error)
-      return `设置测试定时器失败: ${error.message}`
+      return '设置测试定时器失败，请查看日志获取详细信息'
     }
   }
 }
